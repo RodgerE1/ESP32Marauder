@@ -123,12 +123,21 @@ size_t WiFiScan::retainedBleDeviceCount() const {
   return ble_devices == nullptr ? 0 : ble_devices->size();
 }
 
-extern "C" int ieee80211_raw_frame_sanity_check(int32_t arg, int32_t arg2, int32_t arg3){
-    if (arg == 31337)
-      return 1;
-    else
-      return 0;
-}
+// [C5-PORT] Removed Marauder's override of ieee80211_raw_frame_sanity_check.
+// On this build (ESP32 core 3.3.4 / IDF 5.5, esp32c5), the core's libnet80211.a
+// defines this symbol NON-weak, so redefining it here collides at link time
+// ("multiple definition of ieee80211_raw_frame_sanity_check"). The override only
+// existed to force raw-frame *transmission* to be accepted (deauth/beacon-spam/
+// attacks) by returning 1 for the magic value 31337. This is a passive,
+// receive-only scanner — it never injects frames — so the override is unneeded.
+// With it gone, RunSetup()'s self-check calls the core's real function, which
+// returns 0, so wsl_bypass_enabled becomes false. That is the correct state for
+// a scanner: all passive features (sniffers, lists, analyzers, AirTag, GPS) are
+// unaffected; only raw-frame TX (which we intentionally exclude) stays disabled.
+//
+// We keep only a DECLARATION so RunSetup()'s call to it still compiles; it binds
+// to the core's real (non-overriding) implementation at link time.
+extern "C" int ieee80211_raw_frame_sanity_check(int32_t arg, int32_t arg2, int32_t arg3);
 
 extern "C" {
   uint8_t esp_base_mac_addr[6];

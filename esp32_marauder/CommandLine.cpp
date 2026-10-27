@@ -1,4 +1,5 @@
 #include "CommandLine.h"
+#include "JsonSerial.h"  // [C5-PORT] machine-readable @J JSON command set
 
 // GCOVR_EXCL_START -- serial protocol output depends on Arduino Serial.
 namespace {
@@ -83,7 +84,11 @@ void CommandLine::main(uint32_t currentTime) {
 
   this->runCommand(input);
 
-  if (input != "")
+  // [C5-PORT] Re-print the interactive prompt for a human on a serial monitor,
+  // but stay silent while a JSON host drives the link: the prompt has no
+  // trailing newline, so it would otherwise glue onto the next "@J " line
+  // ("> @J {...}") and break the host's line framing.
+  if (input != "" && !JsonSerial::jsonModeEnabled())
     Serial.print("> ");
 }
 
@@ -270,7 +275,18 @@ void CommandLine::runCommand(String input) {
     Serial.println("#" + input);
 
   LinkedList<String> cmd_args = this->parseCommand(input, " ");
-  
+
+  // [C5-PORT] JSON (machine-readable) commands run first so a host can poll
+  // status/data mid-scan. During a GPS-NMEA passthrough we only allow them when
+  // JSON mode is on, so a plain NMEA host reading the port keeps a pure sentence
+  // stream (no interleaved "@J" lines). handle() returns true once it has
+  // consumed a jsoninfo/jsonstatus/jsonlist/jsonmode/jsonbaud command.
+  bool nmea_passthrough = wifi_scan_obj.scanning() &&
+                          wifi_scan_obj.currentScanMode == WIFI_SCAN_GPS_NMEA;
+  if ((!nmea_passthrough || JsonSerial::jsonModeEnabled()) &&
+      JsonSerial::handle(&cmd_args))
+    return;
+
   //// Admin commands
   // Help
   if (cmd_args.get(0) == HELP_CMD) {

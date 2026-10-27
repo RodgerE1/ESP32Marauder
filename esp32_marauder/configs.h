@@ -29,7 +29,7 @@
   //#define ESP32_LDDB
   //#define MARAUDER_DEV_BOARD_PRO
   //#define XIAO_ESP32_S3
-  //#define XIAO_ESP32_C5
+  #define XIAO_ESP32_C5   // [C5-PORT] build target: Seeed XIAO ESP32-C5
   //#define MARAUDER_REV_FEATHER
   //#define MARAUDER_CYD_MICRO // 2432S028
   //#define MARAUDER_CYD_2USB // Another 2432S028 but it has tWo UsBs OoOoOoO
@@ -67,6 +67,11 @@
   #define JSON_SETTING_SIZE 6144
 
 #define MARAUDER_VERSION "v1.19.2"
+
+  // [C5-PORT] JSON serial protocol version reported by jsoninfo. Proto 1 =
+  // info/status/list/analyzer (no binary capture stream). JsonSerial.h defaults
+  // this if absent, but we set it explicitly here for clarity.
+  #define MARAUDER_JSON_PROTO 1
 
   #define GRAPH_REFRESH   100
 

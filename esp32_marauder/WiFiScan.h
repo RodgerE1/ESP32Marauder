@@ -328,8 +328,8 @@ static NimBLEAddress pendingAddress(
     BLE_ADDR_PUBLIC
 );
 
-bool connectionPending = false;
-bool operationInProgress = false;
+inline bool connectionPending = false;    // [C5-PORT] inline: header-defined global, avoid multiple-definition under GCC 14 / -fno-common
+inline bool operationInProgress = false;  // [C5-PORT] inline: same reason
 #endif
 
 #pragma pack(push, 1)
